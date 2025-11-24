@@ -102,10 +102,10 @@ def update_title(
 def create_session(
     data: SessionCreate,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     new_session = models.SessionHistory(
-        user_id=current_user_id,
+        user_id=current_user.id,
         title=data.title
     )
 
@@ -114,3 +114,4 @@ def create_session(
     db.refresh(new_session)
 
     return new_session
+
