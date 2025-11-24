@@ -96,3 +96,21 @@ def update_title(
     db.refresh(session)
 
     return session
+
+# 5. POST /history/sessions/create  (только для тестов)
+@router.post("/sessions/create", response_model=SessionOut)
+def create_session(
+    data: SessionCreate,
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user)
+):
+    new_session = models.SessionHistory(
+        user_id=current_user_id,
+        title=data.title
+    )
+
+    db.add(new_session)
+    db.commit()
+    db.refresh(new_session)
+
+    return new_session
