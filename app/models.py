@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 from .database import Base
 
@@ -13,7 +14,11 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    sessions = relationship("Session", back_populates="user")
+    # История CRUD для AI
+    session_histories = relationship("SessionHistory", back_populates="user", cascade="all, delete")
+
+    # Сессии для сообщений
+    sessions = relationship("Session", back_populates="user", cascade="all, delete")
 
 
 class Session(Base):
@@ -38,3 +43,14 @@ class Message(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     session = relationship("Session", back_populates="messages")
+
+
+class SessionHistory(Base):
+    __tablename__ = "session_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, default="Без названия")
+    user_id = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="session_histories")
