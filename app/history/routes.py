@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models
 from app.schemas import SessionCreate, SessionOut
-from app.auth.router import get_current_user
+from app.auth.utils import get_current_user   # ← правильный импорт
 
 router = APIRouter(prefix="/history", tags=["History"])
 
@@ -13,11 +13,11 @@ router = APIRouter(prefix="/history", tags=["History"])
 @router.get("/sessions", response_model=list[SessionOut])
 def get_sessions(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user)
 ):
     sessions = (
         db.query(models.SessionHistory)
-        .filter(models.SessionHistory.user_id == current_user.id)
+        .filter(models.SessionHistory.user_id == current_user_id)
         .order_by(models.SessionHistory.created_at.desc())
         .all()
     )
@@ -29,13 +29,13 @@ def get_sessions(
 def get_session(
     session_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user)
 ):
     session = (
         db.query(models.SessionHistory)
         .filter(
             models.SessionHistory.id == session_id,
-            models.SessionHistory.user_id == current_user.id
+            models.SessionHistory.user_id == current_user_id
         )
         .first()
     )
@@ -51,13 +51,13 @@ def get_session(
 def delete_session(
     session_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user)
 ):
     session = (
         db.query(models.SessionHistory)
         .filter(
             models.SessionHistory.id == session_id,
-            models.SessionHistory.user_id == current_user.id
+            models.SessionHistory.user_id == current_user_id
         )
         .first()
     )
@@ -77,13 +77,13 @@ def update_title(
     session_id: int,
     data: SessionCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user)
 ):
     session = (
         db.query(models.SessionHistory)
         .filter(
             models.SessionHistory.id == session_id,
-            models.SessionHistory.user_id == current_user.id
+            models.SessionHistory.user_id == current_user_id
         )
         .first()
     )
