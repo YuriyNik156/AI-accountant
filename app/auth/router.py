@@ -22,19 +22,23 @@ bearer_scheme = HTTPBearer()
 
 # --- Зависимость: получение текущего пользователя ---
 def get_current_user(
-    token: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db)
-):
+) -> models.User:
+    """
+    Декодирует JWT и возвращает текущего пользователя.
+    Бросает HTTPException 401, если токен некорректен,
+    и 404, если пользователь не найден.
+    """
+    token = credentials.credentials
     try:
-        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
-
-        if user_id is None:
+        if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
-
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -42,14 +46,14 @@ def get_current_user(
         )
 
     user = db.query(models.User).filter(models.User.id == int(user_id)).first()
-
-    if user is None:
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
 
     return user
+
 
 
 # --- Регистрация ---
