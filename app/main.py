@@ -3,6 +3,7 @@ from app.database import Base, engine
 from app import models
 from app.auth.router import router as auth_router
 
+print(">>> MAIN.PY LOADED <<<")
 
 app = FastAPI()
 
