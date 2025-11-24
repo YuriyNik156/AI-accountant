@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class UserCreate(BaseModel):
@@ -14,3 +15,20 @@ class UserLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class SessionBase(BaseModel):
+    title: str
+
+
+class SessionCreate(BaseModel):
+    title: str = "Без названия"
+
+
+class SessionOut(BaseModel):
+    id: int
+    title: str
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
