@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Chat Frontend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 700px;
+            margin: auto;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #responseBox {
+            white-space: pre-wrap;
+            padding: 15px;
+            border: 1px solid #999;
+            margin-top: 20px;
+            background: #f8f8f8;
+        }
+    </style>
+</head>
+<body>
+
+<h2>🚀 Test Chat Frontend</h2>
+
+<label>Bearer token (без "Bearer "):</label>
+<input id="token" placeholder="вставь сюда JWT access_token">
+
+<label>Message:</label>
+<input id="message" placeholder="Напиши что-нибудь">
+
+<label>Session ID:</label>
+<input id="sessionId" value="0">
+
+<button onclick="sendMessage()">Send</button>
+
+<div id="responseBox">Ответ появится здесь...</div>
+
+<script>
+async function sendMessage() {
+    const token = document.getElementById("token").value.trim();
+    const message = document.getElementById("message").value.trim();
+    const sessionId = parseInt(document.getElementById("sessionId").value);
+
+    if (!token) {
+        alert("Нужен токен!");
+        return;
+    }
+
+    console.log("== Отправляемый запрос ==");
+    console.log({
+        url: "http://127.0.0.1:8000/chat/query",
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: {
+            message: message,
+            session_id: sessionId
+        }
+    });
+
+    try {
+        const response = await fetch("http://127.0.0.1:8000/chat/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({
+                message: message,
+                session_id: sessionId
+            })
+        });
+
+        const data = await response.json();
+
+        document.getElementById("responseBox").innerText =
+            "Status: " + response.status + "\n\n" +
+            JSON.stringify(data, null, 2);
+    }
+    catch (e) {
+        document.getElementById("responseBox").innerText =
+            "Ошибка запроса:\n" + e;
+        console.error(e);
+    }
+}
+</script>
+
+</body>
+</html>

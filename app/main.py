@@ -10,6 +10,8 @@ from app import models
 from app.auth.router import router as auth_router
 from app.history.routes import router as history_router
 from app.chat.router import router as chat_router
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 print(">>> MAIN.PY LOADED <<<")
@@ -38,6 +40,13 @@ app = FastAPI(
     description="Backend with JWT authentication and history CRUD"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # или ["http://127.0.0.1:5500"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Инициализация БД перед стартом сервера
 @app.on_event("startup")
