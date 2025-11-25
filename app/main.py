@@ -13,7 +13,6 @@ from app.chat.router import router as chat_router
 from fastapi.middleware.cors import CORSMiddleware
 
 
-
 print(">>> MAIN.PY LOADED <<<")
 
 
@@ -40,13 +39,23 @@ app = FastAPI(
     description="Backend with JWT authentication and history CRUD"
 )
 
+# ------------------------------------------------------
+#                     CORS FIX
+# ------------------------------------------------------
+
+origins = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # или ["http://127.0.0.1:5500"]
+    allow_origins=origins,          # Только явные адреса
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Инициализация БД перед стартом сервера
 @app.on_event("startup")
