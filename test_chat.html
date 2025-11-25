@@ -48,6 +48,8 @@
 <div id="responseBox">Ответ появится здесь...</div>
 
 <script>
+const URL = "http://127.0.0.1:8000/api/v1/chat/query";
+
 async function sendMessage() {
     const token = document.getElementById("token").value.trim();
     const message = document.getElementById("message").value.trim();
@@ -60,7 +62,7 @@ async function sendMessage() {
 
     console.log("== Отправляемый запрос ==");
     console.log({
-        url: "http://127.0.0.1:8000/chat/query",
+        url: URL,
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -73,7 +75,7 @@ async function sendMessage() {
     });
 
     try {
-        const response = await fetch("http://127.0.0.1:8000/chat/query", {
+        const response = await fetch(URL, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
