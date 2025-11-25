@@ -32,3 +32,11 @@ class SessionOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class ChatQueryRequest(BaseModel):
+    message: str
+    session_id: int
+
+class ChatQueryResponse(BaseModel):
+    answer: str

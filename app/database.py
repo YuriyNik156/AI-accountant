@@ -1,30 +1,27 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 
-# SQLite для MVP
-DATABASE_URL = "sqlite:///./app.db"
+# --- Настройки БД ---
+DATABASE_URL = "sqlite+aiosqlite:///./app.db"
 
-# Для PostgreSQL — просто заменить строку:
-# DATABASE_URL = "postgresql+psycopg2://user:password@localhost/dbname"
-
-engine = create_engine(
+# --- Создаём async engine ---
+engine = create_async_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    future=True,
+    echo=False
 )
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
+# --- Создаём async sessionmaker ---
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False
 )
 
 Base = declarative_base()
 
 
-# Dependency — используется в роутерах
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# --- Dependency для FastAPI ---
+async def get_async_session():
+    async with AsyncSessionLocal() as session:
+        yield session

@@ -2,29 +2,62 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBearer
 
-from app.database import Base, engine
+import asyncio
+
+from app.database import engine
 from app import models
 
 from app.auth.router import router as auth_router
 from app.history.routes import router as history_router
+from app.chat.router import router as chat_router
+
 
 print(">>> MAIN.PY LOADED <<<")
 
-# --- Создаём приложение ---
+
+# ======================================================
+#         АСИНХРОННАЯ ИНИЦИАЛИЗАЦИЯ БАЗЫ
+# ======================================================
+
+async def init_models():
+    """
+    Создаёт все таблицы через AsyncEngine.
+    Вызывается один раз при старте приложения.
+    """
+    async with engine.begin() as conn:
+        await conn.run_sync(models.Base.metadata.create_all)
+
+
+# ======================================================
+#                 СОЗДАНИЕ ПРИЛОЖЕНИЯ
+# ======================================================
+
 app = FastAPI(
     title="AI Accountant API",
     version="1.0.0",
     description="Backend with JWT authentication and history CRUD"
 )
 
-# --- Создаём таблицы ---
-models.Base.metadata.create_all(bind=engine)
 
-# --- Подключаем роутеры ---
+# Инициализация БД перед стартом сервера
+@app.on_event("startup")
+async def on_startup():
+    await init_models()
+
+
+# ======================================================
+#                 ПОДКЛЮЧЕНИЕ РОУТЕРОВ
+# ======================================================
+
 app.include_router(auth_router)
 app.include_router(history_router)
+app.include_router(chat_router)
 
-# --- Простой тестовый эндпоинт ---
+
+# ======================================================
+#                    ТЕСТОВЫЙ ЭНДПОИНТ
+# ======================================================
+
 @app.get("/")
 def root():
     return {"message": "AI-accountant backend is running!"}
@@ -35,6 +68,7 @@ def root():
 # ======================================================
 
 bearer_scheme = HTTPBearer()
+
 
 def custom_openapi():
     """
@@ -60,13 +94,13 @@ def custom_openapi():
         }
     }
 
-    # Добавляем BearerAuth ко всем эндпоинтам автоматически
+    # Автоматически добавляем BearerAuth ко всем операциям
     for path_data in openapi_schema.get("paths", {}).values():
         for operation in path_data.values():
-            # Только если security ещё нет — не перезаписываем вручную заданное
             operation.setdefault("security", [{"BearerAuth": []}])
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 app.openapi = custom_openapi

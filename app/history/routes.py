@@ -1,107 +1,115 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from app.database import get_db
+from app.database import get_async_session
 from app import models
 from app.schemas import SessionCreate, SessionOut
-from app.auth.router import get_current_user   # ← правильный импорт
+from app.auth.router import get_current_user
 
 router = APIRouter(prefix="/history", tags=["History"])
 
 
 # 1. GET /history/sessions
 @router.get("/sessions", response_model=list[SessionOut])
-def get_sessions(
-    db: Session = Depends(get_db),
+async def get_sessions(
+    session: AsyncSession = Depends(get_async_session),
     current_user: models.User = Depends(get_current_user)
 ):
-    sessions = (
-        db.query(models.SessionHistory)
-        .filter(models.SessionHistory.user_id == current_user.id)
+    query = (
+        select(models.SessionHistory)
+        .where(models.SessionHistory.user_id == current_user.id)
         .order_by(models.SessionHistory.created_at.desc())
-        .all()
     )
+
+    result = await session.execute(query)
+    sessions = result.scalars().all()
+
     return sessions
 
 
-# 2. GET /history/sessions/{id}
+# 2. GET /history/sessions/{session_id}
 @router.get("/sessions/{session_id}", response_model=SessionOut)
-def get_session(
+async def get_session(
     session_id: int,
-    db: Session = Depends(get_db),
+    session: AsyncSession = Depends(get_async_session),
     current_user: models.User = Depends(get_current_user)
 ):
-    session = (
-        db.query(models.SessionHistory)
-        .filter(
+    query = (
+        select(models.SessionHistory)
+        .where(
             models.SessionHistory.id == session_id,
             models.SessionHistory.user_id == current_user.id
         )
-        .first()
     )
+    result = await session.execute(query)
+    session_obj = result.scalar_one_or_none()
 
-    if not session:
+    if not session_obj:
         raise HTTPException(status_code=404, detail="Сессия не найдена")
 
-    return session
+    return session_obj
 
 
-# 3. DELETE /history/sessions/{id}
+# 3. DELETE /history/sessions/{session_id}
 @router.delete("/sessions/{session_id}")
-def delete_session(
+async def delete_session(
     session_id: int,
-    db: Session = Depends(get_db),
+    session: AsyncSession = Depends(get_async_session),
     current_user: models.User = Depends(get_current_user)
 ):
-    session = (
-        db.query(models.SessionHistory)
-        .filter(
+    query = (
+        select(models.SessionHistory)
+        .where(
             models.SessionHistory.id == session_id,
             models.SessionHistory.user_id == current_user.id
         )
-        .first()
     )
+    result = await session.execute(query)
+    session_obj = result.scalar_one_or_none()
 
-    if not session:
+    if not session_obj:
         raise HTTPException(status_code=404, detail="Сессия не найдена")
 
-    db.delete(session)
-    db.commit()
+    await session.delete(session_obj)
+    await session.commit()
 
     return {"status": "deleted"}
 
 
-# 4. PUT /history/sessions/{id}/title
+# 4. PUT /history/sessions/{session_id}/title
 @router.put("/sessions/{session_id}/title", response_model=SessionOut)
-def update_title(
+async def update_title(
     session_id: int,
     data: SessionCreate,
-    db: Session = Depends(get_db),
+    session: AsyncSession = Depends(get_async_session),
     current_user: models.User = Depends(get_current_user)
 ):
-    session = (
-        db.query(models.SessionHistory)
-        .filter(
+    query = (
+        select(models.SessionHistory)
+        .where(
             models.SessionHistory.id == session_id,
             models.SessionHistory.user_id == current_user.id
         )
-        .first()
     )
+    result = await session.execute(query)
+    session_obj = result.scalar_one_or_none()
 
-    if not session:
+    if not session_obj:
         raise HTTPException(status_code=404, detail="Сессия не найдена")
 
-    session.title = data.title
-    db.commit()
-    db.refresh(session)
+    session_obj.title = data.title
+    await session.commit()
+    await session.refresh(session_obj)
 
-    return session
+    return session_obj
+
 
 # 5. POST /history/sessions/create  (только для тестов)
 @router.post("/sessions/create", response_model=SessionOut)
-def create_session(
+async def create_session(
     data: SessionCreate,
-    db: Session = Depends(get_db),
+    session: AsyncSession = Depends(get_async_session),
     current_user: models.User = Depends(get_current_user)
 ):
     new_session = models.SessionHistory(
@@ -109,9 +117,8 @@ def create_session(
         title=data.title
     )
 
-    db.add(new_session)
-    db.commit()
-    db.refresh(new_session)
+    session.add(new_session)
+    await session.commit()
+    await session.refresh(new_session)
 
     return new_session
-
