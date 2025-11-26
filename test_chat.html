@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Test Chat Frontend</title>
+    <title>ИИ для бухгалтера</title>
     <style>
         body {
             margin: 0;
@@ -68,7 +68,7 @@
 <div id="historyPanel">
     <h3>📜 История сообщений</h3>
 
-    <label>Session ID:</label>
+    <label>ID сессии:</label>
     <input id="sessionId" value="123" onchange="loadHistory()">
 
     <button onclick="loadHistory()">Загрузить историю</button>
@@ -78,12 +78,12 @@
 
 <!-- Правая колонка -->
 <div id="mainPanel">
-    <h2>🚀 Test Chat Frontend</h2>
+    <h2>ИИ для бухгалтера</h2>
 
-    <label>Bearer token:</label>
+    <label>Токен:</label>
     <input id="token" placeholder="вставь сюда JWT access_token">
 
-    <label>Message:</label>
+    <label>Сообщение:</label>
     <input id="message" placeholder="Напиши что-нибудь">
 
     <button onclick="sendMessage()">Отправить</button>
