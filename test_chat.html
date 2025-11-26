@@ -5,22 +5,54 @@
     <title>Test Chat Frontend</title>
     <style>
         body {
+            margin: 0;
             font-family: Arial, sans-serif;
-            padding: 20px;
-            max-width: 700px;
-            margin: auto;
+            display: flex;
+            height: 100vh;
         }
+
+        /* Левая панель */
+        #historyPanel {
+            width: 280px;
+            background: #f2f2f2;
+            border-right: 1px solid #ccc;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        /* Правая часть */
+        #mainPanel {
+            flex: 1;
+            padding: 20px;
+        }
+
+        #historyPanel h3 {
+            margin-top: 0;
+        }
+
+        .history-item {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+
         input, textarea {
             width: 100%;
             padding: 10px;
             margin-top: 8px;
             margin-bottom: 15px;
         }
+
         button {
             padding: 12px 20px;
             font-size: 16px;
             cursor: pointer;
         }
+
         #responseBox {
             white-space: pre-wrap;
             padding: 15px;
@@ -32,23 +64,36 @@
 </head>
 <body>
 
-<h2>🚀 Test Chat Frontend</h2>
+<!-- Левая колонка -->
+<div id="historyPanel">
+    <h3>📜 История сообщений</h3>
 
-<label>Bearer token (без "Bearer "):</label>
-<input id="token" placeholder="вставь сюда JWT access_token">
+    <label>Session ID:</label>
+    <input id="sessionId" value="123" onchange="loadHistory()">
 
-<label>Message:</label>
-<input id="message" placeholder="Напиши что-нибудь">
+    <button onclick="loadHistory()">Загрузить историю</button>
 
-<label>Session ID:</label>
-<input id="sessionId" value="0">
+    <div id="historyList"></div>
+</div>
 
-<button onclick="sendMessage()">Send</button>
+<!-- Правая колонка -->
+<div id="mainPanel">
+    <h2>🚀 Test Chat Frontend</h2>
 
-<div id="responseBox">Ответ появится здесь...</div>
+    <label>Bearer token:</label>
+    <input id="token" placeholder="вставь сюда JWT access_token">
+
+    <label>Message:</label>
+    <input id="message" placeholder="Напиши что-нибудь">
+
+    <button onclick="sendMessage()">Отправить</button>
+
+    <div id="responseBox">Ответ появится здесь...</div>
+</div>
 
 <script>
-const URL = "http://127.0.0.1:8000/api/v1/chat/query";
+const SEND_URL = "http://127.0.0.1:8000/api/v1/chat/query";
+const HISTORY_URL = "http://127.0.0.1:8000/api/v1/chat/history"; // ← важный URL
 
 async function sendMessage() {
     const token = document.getElementById("token").value.trim();
@@ -60,22 +105,8 @@ async function sendMessage() {
         return;
     }
 
-    console.log("== Отправляемый запрос ==");
-    console.log({
-        url: URL,
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-        },
-        body: {
-            message: message,
-            session_id: sessionId
-        }
-    });
-
     try {
-        const response = await fetch(URL, {
+        const response = await fetch(SEND_URL, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -92,10 +123,45 @@ async function sendMessage() {
         document.getElementById("responseBox").innerText =
             "Status: " + response.status + "\n\n" +
             JSON.stringify(data, null, 2);
+
+        // обновляем историю после отправки
+        loadHistory();
     }
     catch (e) {
-        document.getElementById("responseBox").innerText =
-            "Ошибка запроса:\n" + e;
+        document.getElementById("responseBox").innerText = "Ошибка:\n" + e;
+        console.error(e);
+    }
+}
+
+async function loadHistory() {
+    const sessionId = parseInt(document.getElementById("sessionId").value);
+    const historyBox = document.getElementById("historyList");
+
+    historyBox.innerHTML = "<i>Загрузка...</i>";
+
+    try {
+        const res = await fetch(`${HISTORY_URL}/${sessionId}`);
+        const data = await res.json();
+
+        historyBox.innerHTML = "";
+
+        if (!data.length) {
+            historyBox.innerHTML = "<i>Нет сообщений.</i>";
+            return;
+        }
+
+        data.forEach(msg => {
+            const div = document.createElement("div");
+            div.className = "history-item";
+
+            div.innerText =
+                `${msg.role.toUpperCase()}:\n${msg.content}\n\n(${msg.timestamp})`;
+
+            historyBox.appendChild(div);
+        });
+
+    } catch (e) {
+        historyBox.innerHTML = "<b>Ошибка загрузки истории.</b>";
         console.error(e);
     }
 }

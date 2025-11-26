@@ -42,3 +42,11 @@ async def query_ai(
 
     # 4. Возвращаем ответ фронту
     return ChatQueryResponse(answer=answer_text)
+
+@router.get("/history/{session_id}")
+async def get_history(session_id: int, session: AsyncSession = Depends(get_async_session)):
+    records = await get_messages_by_session(session, session_id)
+    return [
+        {"role": m.role, "text": m.text, "created_at": m.created_at.isoformat()}
+        for m in records
+    ]
