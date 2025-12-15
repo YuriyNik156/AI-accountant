@@ -6,6 +6,7 @@ from app.database import get_async_session
 from app import models
 from app.schemas import SessionCreate, SessionOut
 from app.auth.router import get_current_user
+from app.history.crud import get_messages_by_session
 
 router = APIRouter(prefix="/history", tags=["History"])
 
@@ -17,9 +18,9 @@ async def get_sessions(
     current_user: models.User = Depends(get_current_user)
 ):
     query = (
-        select(models.SessionHistory)
-        .where(models.SessionHistory.user_id == current_user.id)
-        .order_by(models.SessionHistory.created_at.desc())
+        select(models.Session)
+        .where(models.Session.user_id == current_user.id)
+        .order_by(models.Session.created_at.desc())
     )
 
     result = await session.execute(query)
@@ -36,10 +37,10 @@ async def get_session(
     current_user: models.User = Depends(get_current_user)
 ):
     query = (
-        select(models.SessionHistory)
+        select(models.Session)
         .where(
-            models.SessionHistory.id == session_id,
-            models.SessionHistory.user_id == current_user.id
+            models.Session.id == session_id,
+            models.Session.user_id == current_user.id
         )
     )
     result = await session.execute(query)
@@ -59,10 +60,10 @@ async def delete_session(
     current_user: models.User = Depends(get_current_user)
 ):
     query = (
-        select(models.SessionHistory)
+        select(models.Session)
         .where(
-            models.SessionHistory.id == session_id,
-            models.SessionHistory.user_id == current_user.id
+            models.Session.id == session_id,
+            models.Session.user_id == current_user.id
         )
     )
     result = await session.execute(query)
@@ -86,10 +87,10 @@ async def update_title(
     current_user: models.User = Depends(get_current_user)
 ):
     query = (
-        select(models.SessionHistory)
+        select(models.Session)
         .where(
-            models.SessionHistory.id == session_id,
-            models.SessionHistory.user_id == current_user.id
+            models.Session.id == session_id,
+            models.Session.user_id == current_user.id
         )
     )
     result = await session.execute(query)
@@ -112,7 +113,7 @@ async def create_session(
     session: AsyncSession = Depends(get_async_session),
     current_user: models.User = Depends(get_current_user)
 ):
-    new_session = models.SessionHistory(
+    new_session = models.Session(
         user_id=current_user.id,
         title=data.title
     )
@@ -130,5 +131,16 @@ async def get_messages(
     session: AsyncSession = Depends(get_async_session),
     current_user: models.User = Depends(get_current_user)
 ):
-    messages = await get_messages_by_session(session, session_id)
-    return messages
+    # проверяем, что сессия принадлежит пользователю
+    result = await session.execute(
+        select(models.Session).where(
+            models.Session.id == session_id,
+            models.Session.user_id == current_user.id
+        )
+    )
+    session_obj = result.scalar_one_or_none()
+
+    if not session_obj:
+        raise HTTPException(status_code=404, detail="Сессия не найдена")
+
+    return session_obj.messages
