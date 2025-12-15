@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBearer
@@ -11,6 +14,7 @@ from app.auth.router import router as auth_router
 from app.history.routes import router as history_router
 from app.chat.router import router as chat_router
 from fastapi.middleware.cors import CORSMiddleware
+
 
 
 print(">>> MAIN.PY LOADED <<<")
