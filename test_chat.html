@@ -93,7 +93,7 @@
 
 <script>
 const SEND_URL = "http://127.0.0.1:8000/api/v1/chat/query";
-const HISTORY_URL = "http://127.0.0.1:8000/api/v1/chat/history"; // API истории
+const HISTORY_URL = "http://127.0.0.1:8000/history/sessions"; // API истории
 
 // === Отправка сообщения ===
 async function sendMessage() {
@@ -136,29 +136,36 @@ async function sendMessage() {
 // === Загрузка истории ===
 async function loadHistory() {
     const sessionId = parseInt(document.getElementById("sessionId").value);
+    const token = document.getElementById("token").value.trim();
     const historyBox = document.getElementById("historyList");
 
     historyBox.innerHTML = "<i>Загрузка...</i>";
 
     try {
-        const res = await fetch(`${HISTORY_URL}/${sessionId}`);
+        const res = await fetch(`${HISTORY_URL}/${sessionId}`, {
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        });
+
+        if (!res.ok) {
+            throw new Error("HTTP " + res.status);
+        }
+
         const data = await res.json();
 
         historyBox.innerHTML = "";
 
-        if (!data.length) {
+        if (!data.messages || !data.messages.length) {
             historyBox.innerHTML = "<i>Нет сообщений.</i>";
             return;
         }
 
-        data.forEach(msg => {
+        data.messages.forEach(msg => {
             const div = document.createElement("div");
             div.className = "history-item";
-
-            // ВАЖНО: сервер возвращает role, text, created_at
             div.innerText =
                 `${msg.role.toUpperCase()}:\n${msg.text}\n\n(${msg.created_at})`;
-
             historyBox.appendChild(div);
         });
 
@@ -167,6 +174,9 @@ async function loadHistory() {
         console.error(e);
     }
 }
+
+    fetch(`/history/sessions/${sessionId}/messages`)
+
 </script>
 
 </body>

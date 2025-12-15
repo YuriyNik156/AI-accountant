@@ -122,3 +122,13 @@ async def create_session(
     await session.refresh(new_session)
 
     return new_session
+
+
+@router.get("/sessions/{session_id}/messages")
+async def get_messages(
+    session_id: int,
+    session: AsyncSession = Depends(get_async_session),
+    current_user: models.User = Depends(get_current_user)
+):
+    messages = await get_messages_by_session(session, session_id)
+    return messages
