@@ -29,7 +29,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 # --- Зависимость для получения токена из заголовка ---
-bearer_scheme = HTTPBearer()
+bearer_scheme = HTTPBearer(auto_error=False)
 
 def get_current_user_id(token: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> int:
     """

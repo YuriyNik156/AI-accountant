@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,10 +24,13 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     session: AsyncSession = Depends(get_async_session)
 ) -> models.User:
-    token = credentials.credentials
+    print("TOKEN:", credentials.credentials)  # <- посмотри, что реально приходит
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        print("PAYLOAD:", payload)
         user_id = payload.get("sub")
+        if credentials is None:
+            raise HTTPException(status_code=401, detail="Not authenticated")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token")
     except JWTError:
@@ -38,7 +42,12 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    print("USER:", user)
     return user
+
+@router.get("/me")
+async def me(current_user: models.User = Depends(get_current_user)):
+    return {"id": current_user.id, "username": current_user.username}
 
 
 @router.post("/register", response_model=Token)

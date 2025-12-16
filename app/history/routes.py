@@ -113,6 +113,8 @@ async def create_session(
     session: AsyncSession = Depends(get_async_session),
     current_user: models.User = Depends(get_current_user)
 ):
+    print("create_session called, user:", current_user)
+
     new_session = models.Session(
         user_id=current_user.id,
         title=data.title
