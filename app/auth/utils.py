@@ -6,12 +6,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Depends, HTTPException, status
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-)
-
-
 # --- Настройки JWT и паролей ---
 SECRET_KEY = "supersecretkey123"  # позже лучше вынести в .env
 ALGORITHM = "HS256"

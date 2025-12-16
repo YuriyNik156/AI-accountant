@@ -22,9 +22,8 @@ bearer_scheme = HTTPBearer()
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     session: AsyncSession = Depends(get_async_session)
-):
+) -> models.User:
     token = credentials.credentials
-
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
@@ -34,15 +33,12 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Invalid token")
 
     result = await session.execute(
-        models.User.__table__.select().where(models.User.id == int(user_id))
+        select(models.User).where(models.User.id == int(user_id))
     )
-    user = result.fetchone()
-
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    # Easy access
-    return models.User(**user._mapping)
+    return user
 
 
 @router.post("/register", response_model=Token)
