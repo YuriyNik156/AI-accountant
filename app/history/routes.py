@@ -125,14 +125,17 @@ async def create_session(
     return new_session
 
 
-@router.get("/sessions/{session_id}/messages")
+@router.get(
+    "/sessions/{session_id}/messages",
+    response_model=list[SessionOut]
+)
 async def get_messages(
     session_id: int,
-    session: AsyncSession = Depends(get_async_session),
+    db: AsyncSession = Depends(get_async_session),
     current_user: models.User = Depends(get_current_user)
 ):
     # проверяем, что сессия принадлежит пользователю
-    result = await session.execute(
+    result = await db.execute(
         select(models.Session).where(
             models.Session.id == session_id,
             models.Session.user_id == current_user.id
@@ -143,4 +146,5 @@ async def get_messages(
     if not session_obj:
         raise HTTPException(status_code=404, detail="Сессия не найдена")
 
-    return session_obj.messages
+    messages = await get_messages_by_session(db, session_id)
+    return messages

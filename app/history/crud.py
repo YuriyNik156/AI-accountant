@@ -58,10 +58,19 @@ async def save_message(db: AsyncSession, session_id: int, role: str, text: str):
     return msg
 
 
-async def get_messages_by_session(db: AsyncSession, session_id: int):
+async def get_messages_by_session(
+    db: AsyncSession,
+    session_id: int,
+    user_id: int
+):
     result = await db.execute(
         select(Message)
-        .where(Message.session_id == session_id)
+        .join(Session, Session.id == Message.session_id)
+        .where(
+            Message.session_id == session_id,
+            Session.user_id == user_id
+        )
         .order_by(Message.created_at.asc())
     )
     return result.scalars().all()
+
